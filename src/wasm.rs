@@ -15,7 +15,20 @@ impl WasmGame {
             game: Game::new(),
         }
     }
+    pub fn last_move(&self) -> Option<usize> {
+        self.game.last_move(self.game.current_player())
+    }
 
+    pub fn winner_position(&self) -> Option<Vec<u32>> {
+        self.game.winner_position()
+            .map(|positions| {
+                positions
+                    .into_iter()
+                    .map(|position| position as u32)
+                    .collect()
+            })
+    }
+    
     pub fn make_move(&mut self, position: usize) -> bool {
         self.game.make_move(position)
     }
