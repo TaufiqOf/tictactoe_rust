@@ -26,6 +26,14 @@ main {
     cursor: pointer;
 }
 
+.cell.last-move {
+    background-color: yellow;
+}
+
+.cell.winner {
+    background-color: lightgreen;
+}
+
 #reset {
     padding: 10px 20px;
     font-size: 1rem;

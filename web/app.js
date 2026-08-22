@@ -21,13 +21,23 @@ function renderBoard() {
     boardElement.innerHTML = "";
 
     const board = game.board();
-
+    const lastMove = game.last_move();
+    const winnerPositions = game.winner_position() ?? [];
+    const gameOver = game.status() !== "in_progress";
     for (let position = 0; position < 9; position++) {
         const cell = document.createElement("button");
 
         cell.className = "cell";
 
+        if (winnerPositions.includes(position)) {
+            cell.classList.add("winner");
+        }
+        else if (position === lastMove) {
+            cell.classList.add("last-move");
+        }
+
         cell.textContent = board[position];
+        cell.disabled = gameOver;
 
         cell.addEventListener("click", () => {
             makeMove(position);

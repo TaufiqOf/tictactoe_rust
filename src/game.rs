@@ -19,7 +19,9 @@ pub enum GameStatus {
 }
 
 #[derive(Debug)]
-pub struct Board {
+struct Board {
+    x_moves: Vec<usize>,
+    o_moves: Vec<usize>,
     cells: [Cell; 9],
 }
 
@@ -40,7 +42,7 @@ impl Cell {
 }
 
 impl Board {
-    pub fn new() -> Board {
+    fn new() -> Board {
         Board {
             cells: [
                 Cell::Empty,
@@ -53,24 +55,72 @@ impl Board {
                 Cell::Empty,
                 Cell::Empty,
             ],
+            o_moves : Vec::new(),
+            x_moves : Vec::new(),
         }
     }
-    pub fn make_move(&mut self, position: usize, player: Player) -> bool {
+    fn make_move(&mut self, position: usize, player: Player) -> bool {
         if position >= 9 {
             return false;
         }
-        match self.cells[position] {
-            Cell::Empty => {
-                self.cells[position] = match player {
-                    Player::X => Cell::X,
-                    Player::O => Cell::O,
-                };
-                true
-            }
+
+        let moves = match player {
+            Player::X => &self.x_moves,
+            Player::O => &self.o_moves,
+        };
+
+        // If the cell is occupied by the opponent, reject the move.
+        let occupied_by_opponent = match (&self.cells[position], player) {
+            (Cell::X, Player::O) => true,
+            (Cell::O, Player::X) => true,
             _ => false,
+        };
+
+        if occupied_by_opponent {
+            return false;
+        }
+
+        // Remove oldest move if this is the player's 4th move.
+        if moves.len() >= 3 {
+            let oldest_move = moves[0];
+
+            match player {
+                Player::X => {
+                    self.x_moves.remove(0);
+                }
+                Player::O => {
+                    self.o_moves.remove(0);
+                }
+            }
+
+            self.cells[oldest_move] = Cell::Empty;
+        }
+
+        // Place new move.
+        self.cells[position] = match player {
+            Player::X => Cell::X,
+            Player::O => Cell::O,
+        };
+
+        match player {
+            Player::X => self.x_moves.push(position),
+            Player::O => self.o_moves.push(position),
+        }
+
+        true
+    }
+
+    fn winner(&self) -> Option<Player> {
+        let positions = self.winner_position()?;
+
+        match self.cells[positions[0]] {
+            Cell::X => Some(Player::X),
+            Cell::O => Some(Player::O),
+            Cell::Empty => None,
         }
     }
-    pub fn winner(&self) -> Option<Player> {
+
+    fn winner_position(&self) -> Option<[usize; 3]> {
         let winning_lines = [
             [0, 1, 2],
             [3, 4, 5],
@@ -83,26 +133,23 @@ impl Board {
         ];
 
         for line in winning_lines {
-            let a = &self.cells[line[0]];
-            let b = &self.cells[line[1]];
-            let c = &self.cells[line[2]];
-
-            match (a, b, c) {
-                (Cell::X, Cell::X, Cell::X) => {
-                    return Some(Player::X);
+            match (
+                &self.cells[line[0]],
+                &self.cells[line[1]],
+                &self.cells[line[2]],
+            ) {
+                (Cell::X, Cell::X, Cell::X)
+                | (Cell::O, Cell::O, Cell::O) => {
+                    return Some(line);
                 }
-
-                (Cell::O, Cell::O, Cell::O) => {
-                    return Some(Player::O);
-                }
-
                 _ => {}
             }
         }
 
         None
     }
-    pub fn is_draw(&self) -> bool {
+
+    fn is_draw(&self) -> bool {
         if self.winner().is_some() {
             return false;
         }
@@ -142,6 +189,7 @@ impl Board {
 }
 
 impl Game {
+
     pub fn new() -> Game {
         Game {
             board: Board::new(),
@@ -149,6 +197,30 @@ impl Game {
             status: GameStatus::InProgress,
         }
     }
+
+    pub fn winner_position(&self) -> Option<[usize; 3]> {
+        self.board.winner_position()
+    }
+
+    pub fn last_move(&self, player: Player) -> Option<usize> {
+        match player {
+            Player::X => {
+                if self.board.x_moves.is_empty() || self.board.x_moves.len() < 3 {
+                    None
+                } else {
+                    self.board.x_moves.first().copied()
+                }
+            },
+            Player::O => {
+                if self.board.o_moves.is_empty() || self.board.o_moves.len() < 3 {
+                    None
+                } else {
+                    self.board.o_moves.first().copied()
+                }
+            },
+        }
+    }
+
     pub fn board(&self) -> &[Cell; 9] {
         &self.board.cells
     }

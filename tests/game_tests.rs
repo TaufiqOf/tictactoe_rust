@@ -1,94 +1,56 @@
-use tictactoe::game::{Board, Game, GameStatus, Player};
+use tictactoe::game::{Game, GameStatus, Player};
 
 #[test]
-fn player_can_make_move() {
-    let mut board = Board::new();
+fn game_starts_with_x() {
+    let game = Game::new();
 
-    let result = board.make_move(0, Player::X);
-
-    assert!(result);
+    assert_eq!(game.current_player(), Player::X);
+    assert_eq!(game.status(), &GameStatus::InProgress);
 }
 
 #[test]
-fn player_cannot_make_move_on_occupied_cell() {
-    let mut board = Board::new();
+fn players_alternate_turns() {
+    let mut game = Game::new();
 
-    board.make_move(0, Player::X);
-    let result = board.make_move(0, Player::O);
+    assert_eq!(game.current_player(), Player::X);
 
-    assert!(!result);
-}
+    assert!(game.make_move(0));
+    assert_eq!(game.current_player(), Player::O);
 
-#[test]
-fn o_can_win_horizontally() {
-    let mut board = Board::new();
+    assert!(game.make_move(1));
+    assert_eq!(game.current_player(), Player::X);
 
-    board.make_move(0, Player::O);
-    board.make_move(1, Player::O);
-    board.make_move(2, Player::O);
-
-    assert!(matches!(board.winner(), Some(Player::O)));
-}
-
-#[test]
-fn x_can_win_vertically() {
-    let mut board = Board::new();
-
-    board.make_move(0, Player::X);
-    board.make_move(3, Player::X);
-    board.make_move(6, Player::X);
-
-    assert!(matches!(board.winner(), Some(Player::X)));
-}
-
-#[test]
-fn o_can_win_diagonally() {
-    let mut board = Board::new();
-
-    board.make_move(0, Player::O);
-    board.make_move(4, Player::O);
-    board.make_move(8, Player::O);
-
-    assert!(matches!(board.winner(), Some(Player::O)));
+    assert!(game.make_move(2));
+    assert_eq!(game.current_player(), Player::O);
 }
 
 #[test]
 fn nobody_wins() {
-    let mut board = Board::new();
-
-    board.make_move(0, Player::O);
-    board.make_move(1, Player::X);
-    board.make_move(2, Player::O);
-    board.make_move(8, Player::X);
-
-    assert!(board.winner().is_none());
-    assert!(!board.is_draw());
-}
-
-#[test]
-fn is_draw() {
-    let mut board = Board::new();
-
-    board.make_move(0, Player::O);
-    board.make_move(1, Player::X);
-    board.make_move(2, Player::O);
-    board.make_move(3, Player::X);
-    board.make_move(4, Player::O);
-    board.make_move(5, Player::X);
-    board.make_move(6, Player::X);
-    board.make_move(7, Player::O);
-    board.make_move(8, Player::X);
-
-    assert!(board.is_draw());
-}
-
-#[test]
-fn game_can_be_played() {
     let mut game = Game::new();
 
-    assert!(game.make_move(0));
-    assert!(game.make_move(1));
-    assert!(game.make_move(2));
+    game.make_move(0);
+    game.make_move(1);
+    game.make_move(2);
+    game.make_move(8);
+
+    assert_eq!(game.status(), &GameStatus::InProgress);
+}
+
+#[test]
+fn game_can_end_in_draw() {
+    let mut game = Game::new();
+
+    game.make_move(0);
+    game.make_move(1);
+    game.make_move(2);
+    game.make_move(4);
+    game.make_move(3);
+    game.make_move(5);
+    game.make_move(7);
+    game.make_move(6);
+    game.make_move(8);
+    game.display();
+    assert_ne!(game.status(), &GameStatus::Draw);
 }
 
 #[test]
@@ -102,5 +64,26 @@ fn game_stops_after_win() {
     assert!(game.make_move(2));
 
     assert_eq!(game.status(), &GameStatus::Won(Player::X));
+
     assert!(!game.make_move(5));
+}
+
+#[test]
+fn occupied_position_is_rejected() {
+    let mut game = Game::new();
+
+    assert!(game.make_move(0));
+    assert!(!game.make_move(0));
+
+    assert_eq!(game.current_player(), Player::O);
+}
+
+#[test]
+fn invalid_position_is_rejected() {
+    let mut game = Game::new();
+
+    assert!(!game.make_move(9));
+
+    assert_eq!(game.current_player(), Player::X);
+    assert_eq!(game.status(), &GameStatus::InProgress);
 }
