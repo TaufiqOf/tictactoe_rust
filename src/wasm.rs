@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::game::{Game, GameStatus, Player};
+use crate::game::{Game, GameMode, GameStatus, Player};
 
 #[wasm_bindgen]
 pub struct WasmGame {
@@ -10,25 +10,25 @@ pub struct WasmGame {
 #[wasm_bindgen]
 impl WasmGame {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> WasmGame {
+    pub fn new(mode: String) -> WasmGame {
+        let game_mode = match mode.as_str() {
+            "human_vs_bot" => GameMode::HumanVsBot,
+            "human_vs_human" => GameMode::HumanVsHuman,
+            _ => GameMode::HumanVsHuman,
+        };
+
         WasmGame {
-            game: Game::new(),
+            game: Game::new_with_mode(game_mode),
         }
     }
-    pub fn last_move(&self) -> Option<usize> {
-        self.game.last_move(self.game.current_player())
+
+    pub fn mode(&self) -> String {
+        match self.game.mode() {
+            GameMode::HumanVsBot => "human_vs_bot".to_string(),
+            GameMode::HumanVsHuman => "human_vs_human".to_string(),
+        }
     }
 
-    pub fn winner_position(&self) -> Option<Vec<u32>> {
-        self.game.winner_position()
-            .map(|positions| {
-                positions
-                    .into_iter()
-                    .map(|position| position as u32)
-                    .collect()
-            })
-    }
-    
     pub fn make_move(&mut self, position: usize) -> bool {
         self.game.make_move(position)
     }
@@ -51,9 +51,19 @@ impl WasmGame {
     pub fn status(&self) -> String {
         match self.game.status() {
             GameStatus::InProgress => "in_progress".to_string(),
-            GameStatus::Draw => "draw".to_string(),
             GameStatus::Won(Player::X) => "x_won".to_string(),
             GameStatus::Won(Player::O) => "o_won".to_string(),
+            GameStatus::Draw => "draw".to_string(),
         }
+    }
+
+    pub fn first_move(&self) -> Option<usize> {
+        self.game.first_move(self.game.current_player())
+    }
+
+    pub fn winner_position(&self) -> Option<Vec<usize>> {
+        self.game
+            .winner_position()
+            .map(|positions| positions.to_vec())
     }
 }
