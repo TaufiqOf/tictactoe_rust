@@ -2,18 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust Tic Tac Toe</title>
+    <title>Tic Tac Toe</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <main>
-    <h1>Rust Tic Tac Toe</h1>
-    <p id="status">Loading...</p>
+    <h1>Tic Tac Toe</h1>
+
+    <div id="mode">
+        <label>
+            <input
+                    type="radio"
+                    name="game-mode"
+                    value="human_vs_human"
+            >
+            Player vs Player
+        </label>
+
+        <label>
+            <input
+                    type="radio"
+                    name="game-mode"
+                    value="human_vs_bot"
+                    checked
+            >
+            Player vs Bot
+        </label>
+    </div>
+    <p id="selected-mode"></p>
+    <div id="status"></div>
     <div id="board"></div>
-    <button id="reset">New Game</button>
+    <button id="reset">Reset</button>
 </main>
 
 <script type="module" src="app.js"></script>

@@ -1,18 +1,56 @@
 import init, { WasmGame } from "../pkg/tictactoe.js";
 
 let game;
+let mode = "human_vs_bot";
 
 async function main() {
     await init();
 
-    game = new WasmGame();
+    createGame();
+    setupEvents();
+    render();
+}
 
+function createGame() {
+    game = new WasmGame(mode);
+}
+
+function setupEvents() {
+    document
+        .getElementById("reset")
+        .addEventListener("click", resetGame);
+
+    document
+        .querySelectorAll('input[name="game-mode"]')
+        .forEach((input) => {
+            input.addEventListener("change", () => {
+                mode = input.value;
+
+                createGame();
+                render();
+            });
+        });
+}
+
+function resetGame() {
+    createGame();
     render();
 }
 
 function render() {
+    renderMode();
     renderBoard();
     renderStatus();
+}
+
+function renderMode() {
+    const modeElement = document.getElementById("selected-mode");
+
+    if (game.mode() === "human_vs_bot") {
+        modeElement.textContent = "Mode: Player vs Bot";
+    } else {
+        modeElement.textContent = "Mode: Player vs Player";
+    }
 }
 
 function renderBoard() {
@@ -21,9 +59,10 @@ function renderBoard() {
     boardElement.innerHTML = "";
 
     const board = game.board();
-    const lastMove = game.last_move();
+    const lastMove = game.first_move();
     const winnerPositions = game.winner_position() ?? [];
     const gameOver = game.status() !== "in_progress";
+
     for (let position = 0; position < 9; position++) {
         const cell = document.createElement("button");
 
@@ -31,13 +70,15 @@ function renderBoard() {
 
         if (winnerPositions.includes(position)) {
             cell.classList.add("winner");
-        }
-        else if (position === lastMove) {
+        } else if (position === lastMove) {
             cell.classList.add("last-move");
         }
 
         cell.textContent = board[position];
-        cell.disabled = gameOver;
+
+        cell.disabled =
+            gameOver ||
+            board[position] !== " ";
 
         cell.addEventListener("click", () => {
             makeMove(position);
@@ -65,19 +106,11 @@ function renderStatus() {
 }
 
 function makeMove(position) {
-    const success = game.make_move(position);
-
-    if (!success) {
+    if (!game.make_move(position)) {
         return;
     }
 
     render();
 }
-
-document.getElementById("reset").addEventListener("click", () => {
-    game = new WasmGame();
-
-    render();
-});
 
 main();

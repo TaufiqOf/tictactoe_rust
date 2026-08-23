@@ -4,6 +4,12 @@ pub enum Player {
     O,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum GameMode {
+    HumanVsHuman,
+    HumanVsBot,
+}
+
 #[derive(Debug)]
 pub enum Cell {
     Empty,
@@ -30,6 +36,7 @@ pub struct Game {
     board: Board,
     current_player: Player,
     status: GameStatus,
+    mode: GameMode,
 }
 impl Cell {
     pub fn symbol(&self) -> char {
@@ -55,8 +62,8 @@ impl Board {
                 Cell::Empty,
                 Cell::Empty,
             ],
-            o_moves : Vec::new(),
-            x_moves : Vec::new(),
+            o_moves: Vec::new(),
+            x_moves: Vec::new(),
         }
     }
     fn make_move(&mut self, position: usize, player: Player) -> bool {
@@ -138,8 +145,7 @@ impl Board {
                 &self.cells[line[1]],
                 &self.cells[line[2]],
             ) {
-                (Cell::X, Cell::X, Cell::X)
-                | (Cell::O, Cell::O, Cell::O) => {
+                (Cell::X, Cell::X, Cell::X) | (Cell::O, Cell::O, Cell::O) => {
                     return Some(line);
                 }
                 _ => {}
@@ -191,18 +197,27 @@ impl Board {
 impl Game {
 
     pub fn new() -> Game {
+        Self::new_with_mode(GameMode::HumanVsHuman)
+    }
+
+    pub fn new_with_mode(mode: GameMode) -> Game {
         Game {
             board: Board::new(),
             current_player: Player::X,
             status: GameStatus::InProgress,
+            mode,
         }
+    }
+
+    pub fn mode(&self) -> GameMode {
+        self.mode
     }
 
     pub fn winner_position(&self) -> Option<[usize; 3]> {
         self.board.winner_position()
     }
 
-    pub fn last_move(&self, player: Player) -> Option<usize> {
+    pub fn first_move(&self, player: Player) -> Option<usize> {
         match player {
             Player::X => {
                 if self.board.x_moves.is_empty() || self.board.x_moves.len() < 3 {
@@ -210,14 +225,14 @@ impl Game {
                 } else {
                     self.board.x_moves.first().copied()
                 }
-            },
+            }
             Player::O => {
                 if self.board.o_moves.is_empty() || self.board.o_moves.len() < 3 {
                     None
                 } else {
                     self.board.o_moves.first().copied()
                 }
-            },
+            }
         }
     }
 
@@ -234,25 +249,64 @@ impl Game {
         self.board.display();
     }
     pub fn make_move(&mut self, position: usize) -> bool {
+        if !self.make_player_move(position) {
+            return false;
+        }
+
+        self.play_bot_if_needed();
+
+        true
+    }
+    fn make_player_move(&mut self, position: usize) -> bool {
         if self.status != GameStatus::InProgress {
             return false;
         }
+
         if !self.board.make_move(position, self.current_player) {
             return false;
         }
+
         if let Some(player) = self.board.winner() {
             self.status = GameStatus::Won(player);
             return true;
         }
+
         if self.board.is_draw() {
             self.status = GameStatus::Draw;
             return true;
         }
+
         self.current_player = match self.current_player {
             Player::X => Player::O,
             Player::O => Player::X,
         };
 
         true
+    }
+
+    fn play_bot_if_needed(&mut self) {
+        if self.mode != GameMode::HumanVsBot {
+            return;
+        }
+
+        if self.current_player != Player::O {
+            return;
+        }
+
+        if self.status != GameStatus::InProgress {
+            return;
+        }
+
+        let Some(position) = self.bot_move() else {
+            return;
+        };
+
+        self.make_player_move(position);
+    }
+    fn bot_move(&self) -> Option<usize> {
+        self.board
+            .cells
+            .iter()
+            .position(|cell| matches!(cell, Cell::Empty))
     }
 }
